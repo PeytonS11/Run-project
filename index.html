@@ -191,33 +191,6 @@
 
   <div class="setup-card">
     <h2>Quick Setup</h2>
-    <p class="sub">
-      You need a free <a href="https://supabase.com" target="_blank">Supabase</a> account.
-      Create a project, then run this SQL in the <strong>SQL Editor</strong>, and paste your credentials below.
-    </p>
-
-    <div class="setup-sql">-- Run this in Supabase → SQL Editor
-CREATE TABLE IF NOT EXISTS runners (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  color text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS runs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  runner_id uuid REFERENCES runners(id) ON DELETE CASCADE,
-  miles numeric NOT NULL,
-  run_date date NOT NULL,
-  note text,
-  created_at timestamptz DEFAULT now()
-);
-
--- Allow public read/write (no auth needed)
-ALTER TABLE runners ENABLE ROW LEVEL SECURITY;
-ALTER TABLE runs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public_all" ON runners FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "public_all" ON runs FOR ALL USING (true) WITH CHECK (true);</div>
 
     <label class="field-label">Supabase Project URL</label>
     <input class="field-input" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co" />
