@@ -1,23 +1,841 @@
 <!DOCTYPE html>
+const SUPABASE_URL = 'https://yknlekbopxzhxzhroaiu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrbmxla2JvcHh6aHh6aHJvYWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3ODk4NDEsImV4cCI6MjA4ODM2NTg0MX0.kK2dDD5Z1063j5-SxCBHekMYadKwFBhDgshs5bxEzQA';
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Project</title>
-    <style>
-        /* Other CSS styles */
-        /* Removed setup screen CSS styles from lines 36-69 */
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Coast to Coast · Running Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+  // Fallback if primary CDN fails
+  if (typeof supabase === 'undefined') {
+    document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"><\/script>');
+  }
+</script>
+<style>
+  :root {
+    --bg:        #07090f;
+    --bg2:       #0d1220;
+    --bg3:       #111827;
+    --border:    #1e2d45;
+    --border2:   #243550;
+    --gold:      #e8b84b;
+    --gold2:     #f5d07a;
+    --orange:    #e07840;
+    --red:       #d85050;
+    --text:      #ddd5c5;
+    --text2:     #8899aa;
+    --text3:     #445566;
+    --green:     #4caf78;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+  /* ── SETUP SCREEN ── 
+  #setup-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 40px 20px; text-align: center;
+  }
+  #setup-screen h1 { font-family: 'Playfair Display', serif; font-size: clamp(32px,6vw,56px); color: var(--gold); letter-spacing: -0.02em; margin-bottom: 8px; }
+  #setup-screen p { color: var(--text2); margin-bottom: 40px; font-size: 15px; }
+  .setup-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 36px; width: 100%; max-width: 520px; text-align: left;
+  }
+  .setup-card h2 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 6px; color: var(--text); }
+  .setup-card .sub { font-size: 13px; color: var(--text2); margin-bottom: 28px; line-height: 1.5; }
+  .setup-card .sub a { color: var(--gold); }
+  .field-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; display: block; font-family: 'DM Mono', monospace; }
+  .field-input {
+    width: 100%; padding: 12px 14px; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px; font-family: 'DM Mono', monospace;
+    margin-bottom: 16px; outline: none; transition: border-color .2s;
+  }
+  .field-input:focus { border-color: var(--gold); }
+  .btn-primary {
+    width: 100%; padding: 14px; background: linear-gradient(135deg, var(--gold), var(--orange));
+    border: none; border-radius: 10px; cursor: pointer; color: #111; font-size: 15px;
+    font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: .04em;
+    transition: opacity .2s, transform .1s; box-shadow: 0 0 24px rgba(232,184,75,.25);
+  }
+  .btn-primary:hover { opacity: .92; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .setup-sql {
+    background: var(--bg); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 14px; font-family: 'DM Mono', monospace; font-size: 12px; color: #7ab8f5;
+    white-space: pre; overflow-x: auto; margin: 16px 0; line-height: 1.6;
+  }
+*/
+  /* ── APP SHELL ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+
+  /* header */
+  .header {
+    background: linear-gradient(135deg, var(--bg2) 0%, #152035 50%, var(--bg2) 100%);
+    border-bottom: 1px solid var(--border); padding: 20px 28px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .header-left h1 { font-family: 'Playfair Display', serif; font-size: clamp(20px,4vw,30px); color: var(--gold2); letter-spacing: -.01em; }
+  .header-left p { font-size: 11px; color: var(--text2); letter-spacing: .1em; text-transform: uppercase; margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .header-right { text-align: right; }
+  .header-miles { font-family: 'Playfair Display', serif; font-size: clamp(28px,5vw,40px); color: var(--gold); letter-spacing: -.02em; }
+  .header-miles span { font-size: 14px; color: var(--text2); margin-left: 3px; font-family: 'DM Sans', sans-serif; }
+  .header-sub { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+  /* progress bar */
+  .progress-wrap { background: var(--bg3); padding: 14px 28px; border-bottom: 1px solid var(--border); }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 8px; font-family: 'DM Mono', monospace; }
+  .progress-track { height: 10px; background: var(--border); border-radius: 5px; overflow: visible; position: relative; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--orange), var(--red)); border-radius: 5px; transition: width 1s ease; box-shadow: 0 0 10px rgba(232,184,75,.35); }
+  .progress-runner { position: absolute; top: 50%; font-size: 16px; transform: translate(-50%,-50%); transition: left 1s ease; pointer-events: none; filter: drop-shadow(0 0 4px var(--gold)); }
+  .progress-pct { text-align: center; margin-top: 6px; font-size: 11px; color: var(--gold); font-family: 'DM Mono', monospace; }
+
+  /* tabs */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg2); overflow-x: auto; }
+  .tab-btn {
+    padding: 13px 22px; background: none; border: none; cursor: pointer;
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-family: 'DM Sans', sans-serif;
+    color: var(--text3); border-bottom: 2px solid transparent; white-space: nowrap;
+    transition: color .2s, border-color .2s;
+  }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* content */
+  .content { padding: 24px 28px; max-width: 920px; margin: 0 auto; width: 100%; }
+
+  /* MAP */
+  .map-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 6px 40px rgba(0,0,0,.5); }
+  .map-svg { width: 100%; display: block; background: linear-gradient(180deg, #070d1a 0%, #0a1528 100%); }
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 18px; }
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
+  .stat-icon { font-size: 20px; }
+  .stat-val { font-family: 'Playfair Display', serif; font-size: 30px; color: var(--gold); margin: 6px 0 2px; }
+  .stat-val sup { font-size: 13px; color: var(--text2); font-family: 'DM Sans', sans-serif; }
+  .stat-lbl { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .07em; font-family: 'DM Mono', monospace; }
+  .cities-wrap { margin-top: 18px; }
+  .cities-wrap h3 { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; font-family: 'DM Mono', monospace; }
+  .cities { display: flex; flex-wrap: wrap; gap: 7px; }
+  .city-tag { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-family: 'DM Mono', monospace; }
+  .city-tag.passed { background: #162c1e; border: 1px solid #2e5e3a; color: var(--green); }
+  .city-tag.future { background: var(--bg3); border: 1px solid var(--border); color: var(--text3); }
+
+  /* LOG */
+  .log-wrap { max-width: 520px; }
+  .log-wrap h2 { font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 22px; }
+  .runner-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .runner-chip {
+    padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    border: 2px solid var(--border); background: var(--bg2); color: var(--text2);
+    font-family: 'DM Sans', sans-serif; transition: all .2s; display: flex; align-items: center; gap: 7px;
+  }
+  .runner-chip.active { font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .log-success { background: linear-gradient(135deg, #1a4028, #1e5030); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  .add-runner-row { display: flex; gap: 10px; }
+  .btn-secondary {
+    padding: 12px 18px; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 8px; cursor: pointer; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 14px;
+    transition: background .2s; white-space: nowrap;
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  /* LEADERBOARD */
+  .lb-wrap h2 { font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 22px; }
+  .lb-row { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; }
+  .lb-rank { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
+  .lb-info { flex: 1; }
+  .lb-name { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .lb-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .lb-bar-fill { height: 100%; border-radius: 3px; transition: width .8s ease; }
+  .lb-meta { font-size: 11px; color: var(--text3); margin-top: 5px; font-family: 'DM Mono', monospace; }
+  .lb-total { font-weight: 700; font-size: 16px; }
+
+  /* HISTORY */
+  .hist-wrap h2 { font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 22px; }
+  .hist-row { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+  .hist-info { flex: 1; }
+  .hist-top { display: flex; justify-content: space-between; }
+  .hist-name { color: var(--text); font-weight: 500; }
+  .hist-miles { color: var(--gold); font-weight: 700; font-family: 'DM Mono', monospace; }
+  .hist-sub { font-size: 12px; color: var(--text3); margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .del-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text3); cursor: pointer; padding: 4px 8px; font-size: 12px; transition: color .2s, border-color .2s; }
+  .del-btn:hover { color: var(--red); border-color: var(--red); }
+
+  /* TOAST */
+  #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: #fff; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,.4); transition: transform .3s ease; z-index: 999; pointer-events: none; }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* TOOLTIP */
+  .wp-tooltip { pointer-events: none; }
+
+  @media (max-width: 600px) {
+    .content { padding: 16px; }
+    .header { padding: 16px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .stats-row .stat-card:last-child { grid-column: span 2; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
 <body>
-    <script>
-        // Supabase initialization
-        const SUPABASE_URL = 'https://yknlekbopxzhxzhroaiu.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrbmxla2JvcHh6aHh6aHJvYWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3ODk4NDEsImV4cCI6MjA4ODM2NTg0MX0.kK2dDD5Z1063j5-SxCBHekMYadKwFBhDgshs5bxEzQA';
 
-        document.addEventListener('DOMContentLoaded', () => {
-            launchApp(); // Directly calling launchApp() without setup screen
-        });
-    </script>
+<!-- ══ SETUP SCREEN ══ -->
+<div id="setup-screen">
+  <div style="font-size:48px;margin-bottom:16px;">🏃</div>
+  <h1>Coast to Coast</h1>
+  <p>Connect your Supabase database to get started</p>
+
+  <div class="setup-card">
+    <h2>Quick Setup</h2>
+    <p class="sub">
+      You need a free <a href="https://supabase.com" target="_blank">Supabase</a> account.
+      Create a project, then run this SQL in the <strong>SQL Editor</strong>, and paste your credentials below.
+    </p>
+
+    <div class="setup-sql">-- Run this in Supabase → SQL Editor
+CREATE TABLE IF NOT EXISTS runners (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  color text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS runs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  runner_id uuid REFERENCES runners(id) ON DELETE CASCADE,
+  miles numeric NOT NULL,
+  run_date date NOT NULL,
+  note text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Allow public read/write (no auth needed)
+ALTER TABLE runners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE runs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON runners FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_all" ON runs FOR ALL USING (true) WITH CHECK (true);</div>
+
+    <label class="field-label">Supabase Project URL</label>
+    <input class="field-input" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co" />
+
+    <label class="field-label">Supabase Anon Key</label>
+    <input class="field-input" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+
+    <button class="btn-primary" id="connect-btn" onclick="connectSupabase()">Connect & Launch App →</button>
+    <p id="connect-error" style="color:#e05050;font-size:13px;margin-top:10px;display:none;"></p>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>🏃 Coast to Coast</h1>
+      <p>Boston → Santa Monica · 4,500 Mile Challenge</p>
+    </div>
+    <div class="header-right" style="display:flex;align-items:center;gap:16px;">
+      <div style="text-align:right;">
+        <div class="header-miles" id="hdr-miles">0 <span>mi</span></div>
+        <div class="header-sub" id="hdr-sub">0 mi to go</div>
+      </div>
+      <button onclick="resetConnection()" title="Reconnect database" style="background:none;border:1px solid var(--border2);border-radius:8px;color:var(--text2);cursor:pointer;padding:8px 10px;font-size:16px;transition:color .2s,border-color .2s;flex-shrink:0;">⚙️</button>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-labels">
+      <span>🗽 Boston</span>
+      <span id="next-city" style="color:var(--text2);"></span>
+      <span>🌴 Santa Monica</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+      <div class="progress-runner" id="prog-runner" style="left:0%">🏃</div>
+    </div>
+    <div class="progress-pct" id="prog-pct">0.0% complete</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('map',this)">🗺 Map</button>
+    <button class="tab-btn" onclick="showTab('log',this)">➕ Log Run</button>
+    <button class="tab-btn" onclick="showTab('leaderboard',this)">🏆 Leaderboard</button>
+    <button class="tab-btn" onclick="showTab('history',this)">📋 History</button>
+  </div>
+
+  <div class="content">
+    <!-- MAP -->
+    <div id="tab-map">
+      <div class="map-wrap">
+        <!-- D3 renders the full map into this div -->
+        <div id="map-container" style="width:100%;line-height:0;"></div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-val" id="s-total">0<sup> mi</sup></div><div class="stat-lbl">Total Miles</div></div>
+        <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-val" id="s-pct">0<sup> %</sup></div><div class="stat-lbl">Progress</div></div>
+        <div class="stat-card"><div class="stat-icon">🏁</div><div class="stat-val" id="s-left">4,500<sup> mi</sup></div><div class="stat-lbl">Miles Left</div></div>
+      </div>
+
+      <div class="cities-wrap">
+        <h3>Cities Along the Route</h3>
+        <div class="cities" id="cities-list"></div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div id="tab-log" style="display:none">
+      <div class="log-wrap">
+        <h2>Log a Run</h2>
+        <div style="margin-bottom:6px;"><span class="field-label" style="display:inline">Runner</span></div>
+        <div class="runner-chips" id="runner-chips"></div>
+
+        <div class="form-row">
+          <div>
+            <label class="field-label">Miles</label>
+            <input class="field-input" id="inp-miles" type="number" min="0.1" step="0.1" placeholder="e.g. 5.5" style="margin:0"/>
+          </div>
+          <div>
+            <label class="field-label">Date</label>
+            <input class="field-input" id="inp-date" type="date" style="margin:0"/>
+          </div>
+        </div>
+        <div style="margin:14px 0">
+          <label class="field-label">Note (optional)</label>
+          <input class="field-input" id="inp-note" type="text" placeholder="e.g. Morning trail run" style="margin:0"/>
+        </div>
+
+        <button class="btn-primary" id="log-btn" onclick="logRun()">Log Miles →</button>
+
+        <hr class="divider"/>
+        <h3 style="font-size:13px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-family:'DM Mono',monospace;">Add a Runner</h3>
+        <div class="add-runner-row">
+          <input class="field-input" id="inp-runner-name" placeholder="Runner's name" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')addRunner()"/>
+          <button class="btn-secondary" onclick="addRunner()">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="tab-leaderboard" style="display:none">
+      <div class="lb-wrap">
+        <h2>Leaderboard</h2>
+        <div id="lb-rows"></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="tab-history" style="display:none">
+      <div class="hist-wrap">
+        <h2>Recent Runs</h2>
+        <div id="hist-rows"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✓ Logged!</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────
+const GOAL = 4500;
+const COLORS = ["#e8b84b","#4ecdc4","#e07840","#7eb8f7","#bb8fce","#6aba78","#f08070","#85c1e9","#f5d07a","#98d8c8"];
+
+// True ~4,500 mile route (with Carmel, IN):
+// Boston → Albany → Buffalo → Cleveland → Toledo → Chicago (I-90 northern)
+// → Carmel, IN → Indianapolis → St. Louis → Joplin → Oklahoma City (Route 66 corridor)
+// → Amarillo → Santa Fe → Albuquerque → Gallup → Flagstaff → Grand Canyon → Las Vegas → Santa Monica
+const WAYPOINTS = [
+  { name:"Boston, MA",         lat:42.36,  lng:-71.06,  miles:0    },
+  { name:"Albany, NY",         lat:42.65,  lng:-73.75,  miles:175  },
+  { name:"Syracuse, NY",       lat:43.05,  lng:-76.15,  miles:310  },
+  { name:"Buffalo, NY",        lat:42.89,  lng:-78.88,  miles:460  },
+  { name:"Cleveland, OH",      lat:41.50,  lng:-81.69,  miles:590  },
+  { name:"Toledo, OH",         lat:41.66,  lng:-83.56,  miles:710  },
+  { name:"Chicago, IL",        lat:41.85,  lng:-87.65,  miles:970  },
+  { name:"Carmel, IN",         lat:39.98,  lng:-86.12,  miles:1151 },
+  { name:"Indianapolis, IN",   lat:39.77,  lng:-86.16,  miles:1174 },
+  { name:"St. Louis, MO",      lat:38.63,  lng:-90.20,  miles:1416 },
+  { name:"Joplin, MO",         lat:37.08,  lng:-94.51,  miles:1656 },
+  { name:"Oklahoma City, OK",  lat:35.47,  lng:-97.52,  miles:1876 },
+  { name:"Amarillo, TX",       lat:35.22,  lng:-101.83, miles:2166 },
+  { name:"Santa Fe, NM",       lat:35.69,  lng:-105.94, miles:2491 },
+  { name:"Albuquerque, NM",    lat:35.08,  lng:-106.65, miles:2556 },
+  { name:"Gallup, NM",         lat:35.53,  lng:-108.74, miles:2706 },
+  { name:"Flagstaff, AZ",      lat:35.20,  lng:-111.65, miles:2911 },
+  { name:"Grand Canyon, AZ",   lat:36.06,  lng:-112.14, miles:2991 },
+  { name:"Las Vegas, NV",      lat:36.17,  lng:-115.14, miles:3211 },
+  { name:"Barstow, CA",        lat:34.90,  lng:-117.02, miles:3421 },
+  { name:"San Bernardino, CA", lat:34.11,  lng:-117.29, miles:3536 },
+  { name:"Los Angeles, CA",    lat:34.05,  lng:-118.24, miles:3596 },
+  { name:"Santa Monica, CA",   lat:34.01,  lng:-118.49, miles:3636 },
+];
+
+// ── MAP SETUP (D3 + TopoJSON) ─────────────────────────────────────────
+const MAP_W = 700, MAP_H = 400;
+let projection, pathGen, mapSvg, mapReady = false;
+
+async function initMap() {
+  // Albers USA projection fitted to our SVG size
+  projection = d3.geoAlbersUsa()
+    .scale(850)
+    .translate([MAP_W / 2, MAP_H / 2]);
+  pathGen = d3.geoPath().projection(projection);
+
+  // Build SVG
+  mapSvg = d3.select('#map-container')
+    .append('svg')
+    .attr('id', 'map-svg')
+    .attr('viewBox', `0 0 ${MAP_W} ${MAP_H}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('width', '100%')
+    .style('display', 'block')
+    .style('background', 'linear-gradient(180deg,#070d1a 0%,#0a1528 100%)');
+
+  const defs = mapSvg.append('defs');
+  defs.append('linearGradient').attr('id','routeGrad').attr('x1','0%').attr('x2','100%')
+    .selectAll('stop').data([
+      {offset:'0%',color:'#e8b84b'},
+      {offset:'50%',color:'#e07840'},
+      {offset:'100%',color:'#d85050'}
+    ]).enter().append('stop')
+      .attr('offset', d=>d.offset)
+      .attr('stop-color', d=>d.color);
+
+  const glow = defs.append('filter').attr('id','glow');
+  glow.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','blur');
+  const merge = glow.append('feMerge');
+  merge.append('feMergeNode').attr('in','blur');
+  merge.append('feMergeNode').attr('in','SourceGraphic');
+
+  // Load real US TopoJSON
+  try {
+    const us = await d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json');
+    const states = topojson.feature(us, us.objects.states);
+    const nation = topojson.mesh(us, us.objects.states, (a,b) => a !== b);
+    const outline = topojson.feature(us, us.objects.nation);
+
+    // State fills
+    mapSvg.append('g').attr('id','us-states')
+      .selectAll('path')
+      .data(states.features)
+      .enter().append('path')
+        .attr('d', pathGen)
+        .attr('fill', '#0c1a2e')
+        .attr('stroke', 'none');
+
+    // Nation outline (outer border)
+    mapSvg.append('path')
+      .datum(outline)
+      .attr('d', pathGen)
+      .attr('fill', 'none')
+      .attr('stroke', '#1e3a5a')
+      .attr('stroke-width', 1.2);
+
+    // State borders
+    mapSvg.append('path')
+      .datum(nation)
+      .attr('d', pathGen)
+      .attr('fill', 'none')
+      .attr('stroke', '#162840')
+      .attr('stroke-width', 0.6);
+
+  } catch(e) {
+    console.warn('Map data failed to load', e);
+  }
+
+  // Route layers (appended after states so they render on top)
+  mapSvg.append('polyline').attr('id','route-future')
+    .attr('fill','none').attr('stroke','#1e3050')
+    .attr('stroke-width',2.5).attr('stroke-dasharray','7,5');
+  mapSvg.append('polyline').attr('id','route-done')
+    .attr('fill','none').attr('stroke','url(#routeGrad)')
+    .attr('stroke-width',4).attr('stroke-linecap','round').attr('stroke-linejoin','round');
+
+  mapSvg.append('g').attr('id','waypoints');
+
+  const curPos = mapSvg.append('g').attr('id','cur-pos').style('display','none');
+  curPos.append('circle').attr('id','cur-pulse').attr('r',10)
+    .attr('fill','none').attr('stroke','#e8b84b').attr('stroke-width',1.5).attr('opacity',0.5);
+  curPos.append('text').attr('id','cur-icon')
+    .attr('text-anchor','middle').attr('dominant-baseline','central')
+    .attr('font-size',16).attr('filter','url(#glow)').text('🏃');
+
+  // Tooltip group (on top of everything)
+  const tt = mapSvg.append('g').attr('id','wp-tooltip').style('display','none');
+  tt.append('rect').attr('id','tt-bg').attr('rx',6)
+    .attr('fill','#0d1220').attr('stroke','#243550').attr('stroke-width',1);
+  tt.append('text').attr('id','tt-name').attr('text-anchor','middle')
+    .attr('font-size',12).attr('fill','#ddd5c5').attr('font-weight','bold')
+    .attr('font-family','DM Sans, sans-serif');
+  tt.append('text').attr('id','tt-sub').attr('text-anchor','middle')
+    .attr('font-size',10).attr('font-family','DM Mono, monospace');
+
+  mapReady = true;
+}
+
+// Project lat/lng using D3 Albers — returns {x,y} or falls back to equirectangular
+function project(lat, lng) {
+  if (projection) {
+    const pt = projection([lng, lat]);
+    if (pt) return { x: pt[0], y: pt[1] };
+  }
+  // fallback equirectangular
+  return {
+    x: ((lng - (-125)) / ((-66) - (-125))) * MAP_W,
+    y: ((49 - lat) / (49 - 24)) * MAP_H,
+  };
+}
+
+// WP_SVG computed lazily after projection is ready
+function getWPSVG() {
+  return WAYPOINTS.map(w => project(w.lat, w.lng));
+}
+
+// ── STATE ────────────────────────────────────────────────────────────
+let db = null;
+let runners = [];
+let runs = [];
+let selectedRunnerId = null;
+let channel = null;
+
+// ── SUPABASE LOAD CHECK ──────────────────────────────────────────────
+function getSupabaseClient(url, key) {
+  // Handle both UMD export styles
+  if (typeof supabase !== 'undefined' && supabase.createClient) {
+    return supabase.createClient(url, key);
+  }
+  if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+    return window.supabase.createClient(url, key);
+  }
+  throw new Error('Supabase library failed to load. Check your internet connection and try refreshing.');
+}
+
+// ── SUPABASE CONNECT ─────────────────────────────────────────────────
+function connectSupabase() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const btn = document.getElementById('connect-btn');
+  const err = document.getElementById('connect-error');
+  if (!url || !key) { showErr('Please fill in both fields.'); return; }
+  if (!url.startsWith('https://')) { showErr('URL should start with https://'); return; }
+  btn.disabled = true; btn.textContent = 'Connecting…';
+  try {
+    db = getSupabaseClient(url, key);
+    localStorage.setItem('sb_url', url);
+    localStorage.setItem('sb_key', key);
+    launchApp();
+  } catch(e) { showErr('Connection failed: ' + e.message); btn.disabled=false; btn.textContent='Connect & Launch App →'; }
+
+  function showErr(msg) { err.textContent = msg; err.style.display = 'block'; }
+}
+
+// ── LAUNCH ───────────────────────────────────────────────────────────
+async function launchApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+
+  await Promise.all([loadData(), initMap()]);
+  subscribeRealtime();
+  renderAll();
+}
+
+async function loadData() {
+  const [{ data: r }, { data: ru }] = await Promise.all([
+    db.from('runners').select('*').order('created_at'),
+    db.from('runs').select('*').order('run_date', { ascending: false }),
+  ]);
+  runners = r || [];
+  runs = ru || [];
+  if (runners.length > 0 && !selectedRunnerId) selectedRunnerId = runners[0].id;
+}
+
+function subscribeRealtime() {
+  if (channel) db.removeChannel(channel);
+  channel = db.channel('public-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'runners' }, async () => { await loadData(); renderAll(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'runs' },    async () => { await loadData(); renderAll(); })
+    .subscribe();
+}
+
+// ── DATA HELPERS ─────────────────────────────────────────────────────
+function totalMiles() { return runs.reduce((s,r)=>s+parseFloat(r.miles),0); }
+function runnerTotal(id) { return runs.filter(r=>r.runner_id===id).reduce((s,r)=>s+parseFloat(r.miles),0); }
+
+function posOnRoute(miles) {
+  const clamped = Math.min(miles, GOAL);
+  const pct = clamped / GOAL;
+  for (let i=0; i<WAYPOINTS.length-1; i++) {
+    const a=WAYPOINTS[i], b=WAYPOINTS[i+1];
+    const s=a.miles/GOAL, e=b.miles/GOAL;
+    if (pct>=s && pct<=e) {
+      const t = (pct-s)/(e-s);
+      return { lat: a.lat+(b.lat-a.lat)*t, lng: a.lng+(b.lng-a.lng)*t };
+    }
+  }
+  return { lat: WAYPOINTS[WAYPOINTS.length-1].lat, lng: WAYPOINTS[WAYPOINTS.length-1].lng };
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────
+function renderAll() {
+  const total = totalMiles();
+  const pct = Math.min(total/GOAL, 1);
+  const left = Math.max(0, GOAL-total);
+  const nextWP = WAYPOINTS.find(w=>w.miles>total);
+
+  // header
+  document.getElementById('hdr-miles').innerHTML = Math.round(total).toLocaleString()+' <span>mi</span>';
+  document.getElementById('hdr-sub').textContent = left>0 ? Math.round(left).toLocaleString()+' mi to go' : '🎉 Goal reached!';
+
+  // progress
+  const pctStr = (pct*100).toFixed(1)+'%';
+  document.getElementById('prog-fill').style.width = pctStr;
+  document.getElementById('prog-runner').style.left = pctStr;
+  document.getElementById('prog-pct').textContent = (pct*100).toFixed(1)+'% complete';
+  document.getElementById('next-city').textContent = nextWP
+    ? `Next: ${nextWP.name} (${Math.round(nextWP.miles-total).toLocaleString()} mi)`
+    : '🎉 Goal reached!';
+
+  // stats
+  document.getElementById('s-total').innerHTML = Math.round(total).toLocaleString()+'<sup> mi</sup>';
+  document.getElementById('s-pct').innerHTML = (pct*100).toFixed(1)+'<sup> %</sup>';
+  document.getElementById('s-left').innerHTML = Math.round(left).toLocaleString()+'<sup> mi</sup>';
+
+  renderMap(total, pct);
+  renderCities(total);
+  renderRunnerChips();
+  renderLeaderboard();
+  renderHistory();
+}
+
+function renderMap(total, pct) {
+  if (!mapReady) return;
+  const WP_SVG = getWPSVG();
+
+  // full route (dashed future)
+  const allPts = WP_SVG.map(p=>`${p.x},${p.y}`).join(' ');
+  document.getElementById('route-future').setAttribute('points', allPts);
+
+  // completed segment
+  const curGeo = posOnRoute(total);
+  const curSVG = project(curGeo.lat, curGeo.lng);
+  const passedIdx = WAYPOINTS.findLastIndex(w=>w.miles<=total);
+  const donePts = WP_SVG.slice(0, passedIdx+1).concat([curSVG]).map(p=>`${p.x},${p.y}`).join(' ');
+  document.getElementById('route-done').setAttribute('points', total>0 ? donePts : '');
+
+  // current marker
+  const cp = document.getElementById('cur-pos');
+  const ci = document.getElementById('cur-icon');
+  const cPulse = document.getElementById('cur-pulse');
+  if (total > 0) {
+    cp.style.display = '';
+    ci.setAttribute('x', curSVG.x); ci.setAttribute('y', curSVG.y+1);
+    cPulse.setAttribute('cx', curSVG.x); cPulse.setAttribute('cy', curSVG.y);
+    cPulse.innerHTML = `
+      <animate attributeName="r" values="8;16;8" dur="2.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.5;0.05;0.5" dur="2.2s" repeatCount="indefinite"/>`;
+  } else { cp.style.display = 'none'; }
+
+  // waypoint dots
+  const g = document.getElementById('waypoints');
+  g.innerHTML = '';
+  WAYPOINTS.forEach((wp, i) => {
+    const pt = WP_SVG[i];
+    const passed = wp.miles <= total;
+    const hit = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    hit.setAttribute('cx',pt.x); hit.setAttribute('cy',pt.y); hit.setAttribute('r',9);
+    hit.setAttribute('fill','transparent'); hit.style.cursor='pointer';
+
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',pt.x); dot.setAttribute('cy',pt.y);
+    dot.setAttribute('r', passed?4:2.5);
+    dot.setAttribute('fill', passed?'#e8b84b':'#1e3050');
+    dot.setAttribute('stroke', passed?'#e07840':'#2a4060');
+    dot.setAttribute('stroke-width','1.5');
+    if (passed) dot.setAttribute('filter','url(#glow)');
+
+    const showTip = () => showTooltip(wp, pt, total);
+    const hideTip = () => document.getElementById('wp-tooltip').style.display='none';
+    hit.addEventListener('mouseenter', showTip);
+    hit.addEventListener('mouseleave', hideTip);
+    dot.addEventListener('mouseenter', showTip);
+    dot.addEventListener('mouseleave', hideTip);
+
+    g.appendChild(dot); g.appendChild(hit);
+
+    // labels for start/end
+    if (i===0 || i===WAYPOINTS.length-1) {
+      const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      lbl.setAttribute('x',pt.x); lbl.setAttribute('y',pt.y-9);
+      lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','10');
+      lbl.setAttribute('fill','#8899aa'); lbl.setAttribute('font-family','DM Mono, monospace');
+      lbl.textContent = i===0?'Boston':'Santa Monica';
+      g.appendChild(lbl);
+    }
+  });
+}
+
+function showTooltip(wp, pt, total) {
+  const tt = document.getElementById('wp-tooltip');
+  const bg = document.getElementById('tt-bg');
+  const nm = document.getElementById('tt-name');
+  const sb = document.getElementById('tt-sub');
+  const passed = wp.miles <= total;
+  const tx = Math.max(62, Math.min(pt.x, MAP_W - 62));
+  const ty = Math.max(4, pt.y - 50);
+  bg.setAttribute('x',tx-64); bg.setAttribute('y',ty); bg.setAttribute('width',128); bg.setAttribute('height',40);
+  nm.setAttribute('x',tx); nm.setAttribute('y',ty+15); nm.textContent=wp.name;
+  sb.setAttribute('x',tx); sb.setAttribute('y',ty+30);
+  sb.setAttribute('fill', passed?'#6aba78':'#8899aa');
+  sb.textContent = passed ? '✓ Reached!' : Math.round(wp.miles-total).toLocaleString()+' mi away';
+  tt.style.display='';
+}
+
+function renderCities(total) {
+  const el = document.getElementById('cities-list');
+  el.innerHTML = WAYPOINTS.map(wp => {
+    const passed = wp.miles<=total;
+    return `<span class="city-tag ${passed?'passed':'future'}">${passed?'✓ ':' '}${wp.name}</span>`;
+  }).join('');
+}
+
+function renderRunnerChips() {
+  const el = document.getElementById('runner-chips');
+  if (!selectedRunnerId && runners.length>0) selectedRunnerId=runners[0].id;
+  el.innerHTML = runners.map(r => {
+    const active = r.id===selectedRunnerId;
+    const style = active
+      ? `background:${r.color}22;border-color:${r.color};color:${r.color};`
+      : '';
+    return `<button class="runner-chip ${active?'active':''}" style="${style}" onclick="selectRunner('${r.id}')">
+      <span class="dot" style="background:${r.color}"></span>${r.name}
+    </button>`;
+  }).join('');
+}
+
+function renderLeaderboard() {
+  const sorted = [...runners].map(r=>({...r,total:runnerTotal(r.id)})).sort((a,b)=>b.total-a.total);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('lb-rows').innerHTML = sorted.map((r,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank">${medals[i]||'#'+(i+1)}</div>
+      <div class="lb-info">
+        <div class="lb-name"><span class="dot" style="background:${r.color}"></span>${r.name}</div>
+        <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${Math.min(r.total/GOAL*100,100).toFixed(1)}%;background:${r.color}"></div></div>
+        <div class="lb-meta">${(r.total/GOAL*100).toFixed(1)}% of goal · ${runs.filter(x=>x.runner_id===r.id).length} runs</div>
+      </div>
+      <div class="lb-total" style="color:${r.color}">${r.total.toFixed(1)} mi</div>
+    </div>
+  `).join('');
+}
+
+function renderHistory() {
+  const runnerMap = Object.fromEntries(runners.map(r=>[r.id,r]));
+  const recent = [...runs].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,20);
+  if (recent.length===0) {
+    document.getElementById('hist-rows').innerHTML='<p style="color:var(--text3)">No runs logged yet.</p>';
+    return;
+  }
+  document.getElementById('hist-rows').innerHTML = recent.map(run => {
+    const r = runnerMap[run.runner_id];
+    if (!r) return '';
+    const d = new Date(run.run_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return `<div class="hist-row">
+      <span class="dot" style="background:${r.color}"></span>
+      <div class="hist-info">
+        <div class="hist-top"><span class="hist-name">${r.name}</span><span class="hist-miles">${parseFloat(run.miles).toFixed(1)} mi</span></div>
+        <div class="hist-sub">${d}${run.note?` · ${run.note}`:''}</div>
+      </div>
+      <button class="del-btn" onclick="deleteRun('${run.id}')">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ── ACTIONS ──────────────────────────────────────────────────────────
+function selectRunner(id) { selectedRunnerId=id; renderRunnerChips(); }
+
+async function logRun() {
+  const miles = parseFloat(document.getElementById('inp-miles').value);
+  const date  = document.getElementById('inp-date').value;
+  const note  = document.getElementById('inp-note').value.trim();
+  if (!miles || miles<=0 || !date || !selectedRunnerId) return;
+  const btn = document.getElementById('log-btn');
+  btn.disabled=true;
+  await db.from('runs').insert({ runner_id:selectedRunnerId, miles, run_date:date, note:note||null });
+  document.getElementById('inp-miles').value='';
+  document.getElementById('inp-note').value='';
+  btn.disabled=false;
+  toast('✓ Miles logged!');
+}
+
+async function addRunner() {
+  const name = document.getElementById('inp-runner-name').value.trim();
+  if (!name) return;
+  const color = COLORS[runners.length % COLORS.length];
+  const { data } = await db.from('runners').insert({ name, color }).select().single();
+  document.getElementById('inp-runner-name').value='';
+  if (data) selectedRunnerId = data.id;
+  toast('✓ Runner added!');
+}
+
+async function deleteRun(id) {
+  await db.from('runs').delete().eq('id', id);
+}
+
+function resetConnection() {
+  if (!confirm('Reconnect to a different Supabase project?\n\nYour data stays safe — this only clears the saved credentials on this device.')) return;
+  localStorage.removeItem('sb_url');
+  localStorage.removeItem('sb_key');
+  if (channel) db.removeChannel(channel);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('sb-url').value = '';
+  document.getElementById('sb-key').value = '';
+  document.getElementById('connect-btn').disabled = false;
+  document.getElementById('connect-btn').textContent = 'Connect & Launch App →';
+}
+
+function showTab(name, btn) {
+  ['map','log','leaderboard','history'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===name?'':'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── AUTO-CONNECT if creds saved ───────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Always show setup screen first, then try auto-connect
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if (url && key) {
+    try {
+      db = getSupabaseClient(url, key);
+      document.getElementById('sb-url').value = url;
+      document.getElementById('sb-key').value = key;
+      launchApp();
+    } catch(e) {
+      // Show setup screen with error if library not loaded
+      const err = document.getElementById('connect-error');
+      err.textContent = e.message;
+      err.style.display = 'block';
+    }
+  }
+});
+</script>
 </body>
 </html>
