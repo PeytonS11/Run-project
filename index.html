@@ -214,6 +214,7 @@
       <div style="text-align:right;">
         <div class="header-miles" id="hdr-miles">0 <span>mi</span></div>
         <div class="header-sub" id="hdr-sub">0 mi to go</div>
+        <div class="header-sub" id="hdr-daily" style="color:var(--text2);font-size:11px;margin-top:6px;">0 mi/day per runner</div>
       </div>
       <button onclick="resetConnection()" title="Reconnect database" style="background:none;border:1px solid var(--border2);border-radius:8px;color:var(--text2);cursor:pointer;padding:8px 10px;font-size:16px;transition:color .2s,border-color .2s;flex-shrink:0;">⚙️</button>
     </div>
@@ -553,6 +554,16 @@ function posOnRoute(miles) {
   return { lat: WAYPOINTS[WAYPOINTS.length-1].lat, lng: WAYPOINTS[WAYPOINTS.length-1].lng };
 }
 
+function dailyMilesRequired() {
+  const total = totalMiles();
+  const left = Math.max(0, GOAL - total);
+  const targetDate = new Date('2025-12-31'); // Set your actual target date here
+  const today = new Date();
+  const daysLeft = Math.max(1, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
+  const milesPerRunnerPerDay = (left / 3) / daysLeft; // Assuming 3 runners
+  return milesPerRunnerPerDay;
+}
+
 // ── RENDER ───────────────────────────────────────────────────────────
 function renderAll() {
   const total = totalMiles();
@@ -563,6 +574,8 @@ function renderAll() {
   // header
   document.getElementById('hdr-miles').innerHTML = Math.round(total).toLocaleString()+' <span>mi</span>';
   document.getElementById('hdr-sub').textContent = left>0 ? Math.round(left).toLocaleString()+' mi to go' : '🎉 Goal reached!';
+  const dailyReq = dailyMilesRequired();
+  document.getElementById('hdr-daily').textContent = left>0 ? dailyReq.toFixed(2)+' mi/day per runner' : '🎉 Goal reached!';
 
   // progress
   const pctStr = (pct*100).toFixed(1)+'%';
