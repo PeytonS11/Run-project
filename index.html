@@ -438,16 +438,23 @@ async function initMap() {
     .attr('text-anchor','middle').attr('dominant-baseline','central')
     .attr('font-size',16).attr('filter','url(#glow)').text('🏃');
 
-  // Tooltip group (on top of everything)
+  // Pace car marker (where we should be)
+  const pacePos = mapSvg.append('g').attr('id','pace-pos').style('display','none');
+  pacePos.append('circle').attr('id','pace-pulse').attr('r',8)
+    .attr('fill','none').attr('stroke','#4ecdc4').attr('stroke-width',1.5).attr('opacity',0.6);
+  pacePos.append('text').attr('id','pace-icon')
+    .attr('text-anchor','middle').attr('dominant-baseline','central')
+    .attr('font-size',14).text('🚗');
+    // Tooltip group (on top of everything)
   const tt = mapSvg.append('g').attr('id','wp-tooltip').style('display','none');
   tt.append('rect').attr('id','tt-bg').attr('rx',6)
-    .attr('fill','#0d1220').attr('stroke','#243550').attr('stroke-width',1);
+      .attr('fill','#0d1220').attr('stroke','#243550').attr('stroke-width',1);
   tt.append('text').attr('id','tt-name').attr('text-anchor','middle')
-    .attr('font-size',12).attr('fill','#ddd5c5').attr('font-weight','bold')
-    .attr('font-family','DM Sans, sans-serif');
+      .attr('font-size',12).attr('fill','#ddd5c5').attr('font-weight','bold')
+      .attr('font-family','DM Sans, sans-serif');
   tt.append('text').attr('id','tt-sub').attr('text-anchor','middle')
-    .attr('font-size',10).attr('font-family','DM Mono, monospace');
-
+      .attr('font-size',10).attr('font-family','DM Mono, monospace');
+  
   mapReady = true;
 }
 
@@ -564,6 +571,26 @@ function dailyMilesRequired() {
   return milesPerRunnerPerDay;
 }
 
+function paceCarsPosition() {
+  const targetDate = new Date('2026-12-31'); // Same target date as daily requirement
+  const today = new Date();
+  const startDate = new Date('2026-03-12'); // Project start date
+  
+  // Calculate total days for the journey
+  const totalDays = (targetDate - startDate) / (1000 * 60 * 60 * 24);
+  // Calculate days elapsed
+  const daysElapsed = (today - startDate) / (1000 * 60 * 60 * 24);
+  
+  // Expected progress: linear interpolation from 0% to 100%
+  const expectedPct = Math.min(daysElapsed / totalDays, 1);
+  const expectedMiles = expectedPct * GOAL;
+  
+  return {
+    miles: expectedMiles,
+    pct: expectedPct
+  };
+}
+  
 // ── RENDER ───────────────────────────────────────────────────────────
 function renderAll() {
   const total = totalMiles();
@@ -626,6 +653,20 @@ function renderMap(total, pct) {
       <animate attributeName="opacity" values="0.5;0.05;0.5" dur="2.2s" repeatCount="indefinite"/>`;
   } else { cp.style.display = 'none'; }
 
+  // pace car marker (where we should be at this point in time)
+  const pace = paceCarsPosition();
+  const paceGeo = posOnRoute(pace.miles);
+  const paceSVG = project(paceGeo.lat, paceGeo.lng);
+  const pp = document.getElementById('pace-pos');
+  const pi = document.getElementById('pace-icon');
+  const pPulse = document.getElementById('pace-pulse');
+    pp.style.display = '';
+    pi.setAttribute('x', paceSVG.x); pi.setAttribute('y', paceSVG.y+1);
+    pPulse.setAttribute('cx', paceSVG.x); pPulse.setAttribute('cy', paceSVG.y);
+    pPulse.innerHTML = `
+      <animate attributeName="r" values="6;10;6" dur="2.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;0.2;0.6" dur="2.8s" repeatCount="indefinite"/>`;
+  
   // waypoint dots
   const g = document.getElementById('waypoints');
   g.innerHTML = '';
