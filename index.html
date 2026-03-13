@@ -436,7 +436,7 @@ async function initMap() {
     .attr('fill','none').attr('stroke','#e8b84b').attr('stroke-width',1.5).attr('opacity',0.5);
   curPos.append('text').attr('id','cur-icon')
     .attr('text-anchor','middle').attr('dominant-baseline','central')
-    .attr('font-size',16).attr('filter','url(#glow)').text('🏃');
+    .attr('font-size',16).attr('filter','url(#glow)').text('🐢');
 
   // Pace car marker (where we should be)
   const pacePos = mapSvg.append('g').attr('id','pace-pos').style('display','none');
@@ -444,7 +444,7 @@ async function initMap() {
     .attr('fill','none').attr('stroke','#4ecdc4').attr('stroke-width',1.5).attr('opacity',0.6);
   pacePos.append('text').attr('id','pace-icon')
     .attr('text-anchor','middle').attr('dominant-baseline','central')
-    .attr('font-size',14).text('🚗');
+    .attr('font-size',14).text('🐇');
     // Tooltip group (on top of everything)
   const tt = mapSvg.append('g').attr('id','wp-tooltip').style('display','none');
   tt.append('rect').attr('id','tt-bg').attr('rx',6)
