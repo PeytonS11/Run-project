@@ -754,7 +754,7 @@ function renderLeaderboard() {
       <div class="lb-info">
         <div class="lb-name"><span class="dot" style="background:${r.color}"></span>${r.name}</div>
         <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${Math.min(r.total/INDIVIDUAL_GOAL*100,100).toFixed(1)}%;background:${r.color}"></div></div>
-        <div class="lb-meta">${(r.total/INDIVIDUAL_GOAL*100).toFixed(1)}% of goal · ${runs.filter(x=>x.runner_id===r.id).length} runs</div>
+        <div class="lb-meta">${(r.total/INDIVIDUAL_GOAL*100).toFixed(1)}% of 1,500 mile goal · ${runs.filter(x=>x.runner_id===r.id).length} runs</div>
       </div>
       <div class="lb-total" style="color:${r.color}">${r.total.toFixed(1)} mi</div>
     </div>
